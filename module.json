@@ -28,29 +28,5 @@
   },
   "url": "https://github.com/Conjectural-Technologies/enhanced-active-effects",
   "manifest": "https://raw.githubusercontent.com/Conjectural-Technologies/enhanced-active-effects/main/module.json",
-  "download": "https://github.com/Conjectural-Technologies/enhanced-active-effects/archive/refs/tags/v1.0.0.zip",
-  "packs": [
-    {
-      "name": "item",
-      "label": "Items",
-      "path": "packs/item",
-      "type": "Item",
-      "system": "dnd5e",
-      "ownership": {
-        "PLAYER": "OBSERVER",
-        "ASSISTANT": "OWNER"
-      }
-    },
-    {
-      "name": "journal-entry",
-      "label": "Journal Entries",
-      "path": "packs/journal-entry",
-      "type": "JournalEntry",
-      "ownership": {
-        "PLAYER": "OBSERVER",
-        "ASSISTANT": "OWNER"
-      },
-      "system": "dnd5e"
-    }
-  ]
+  "download": "https://github.com/Conjectural-Technologies/enhanced-active-effects/archive/refs/tags/v1.0.0.zip"
 }
