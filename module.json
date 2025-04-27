@@ -1,0 +1,56 @@
+{
+  "id": "enhanced-active-effects",
+  "title": "Enhanced Active Effects",
+  "description": "A small module for applying lighting and vision effects to tokens through Active Effects.",
+  "version": "1.0.0",
+  "authors": [
+    {
+      "name": "Conjectural Technologies",
+      "url": "https://github.com/Conjectural-Technologies",
+      "flags": {}
+    }
+  ],
+  "esmodules": [
+    "scripts/enhanced-active-effects.js"
+  ],
+  "compatibility": {
+    "minimum": "12.331",
+    "verified": "13"
+  },
+  "relationships": {
+    "systems": [
+      {
+        "id": "dnd5e",
+        "type": "system",
+        "compatibility": {}
+      }
+    ]
+  },
+  "url": "https://github.com/Conjectural-Technologies/enhanced-active-effects",
+  "manifest": "https://raw.githubusercontent.com/Conjectural-Technologies/enhanced-active-effects/main/module.json",
+  "download": "https://github.com/Conjectural-Technologies/enhanced-active-effects/archive/refs/tags/v1.0.0.zip",
+  "packs": [
+    {
+      "name": "item",
+      "label": "Items",
+      "path": "packs/item",
+      "type": "Item",
+      "system": "dnd5e",
+      "ownership": {
+        "PLAYER": "OBSERVER",
+        "ASSISTANT": "OWNER"
+      }
+    },
+    {
+      "name": "journal-entry",
+      "label": "Journal Entries",
+      "path": "packs/journal-entry",
+      "type": "JournalEntry",
+      "ownership": {
+        "PLAYER": "OBSERVER",
+        "ASSISTANT": "OWNER"
+      },
+      "system": "dnd5e"
+    }
+  ]
+}
