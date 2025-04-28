@@ -1,6 +1,7 @@
 const { deepClone, duplicate, flattenObject, getProperty, hasProperty, mergeObject, setProperty } = foundry.utils;
 
 class EAE {
+
     static async ready() {
         const getEffects = (actor) => {
             if (!actor) return [];
@@ -9,82 +10,80 @@ class EAE {
 
         Hooks.on("updateActiveEffect", async (effect, change, options, userId) => {
             if (game.userId !== userId) return;
-            
             let actor;
             if (effect.parent instanceof Actor) actor = effect.parent;
-            else if (effect.parent?.parent instanceof Actor) actor = effect.parent.parent;
+            else if (effect.parent?.parent instanceof Actor)
+                actor = effect.parent.parent;
             else return;
-            
             let EAEeffects = getEffects(actor);
             EAE.applyEffects(actor, EAEeffects);
-        });
+        })
 
         Hooks.on("createActiveEffect", async (effect, options, userId) => {
             if (game.userId !== userId || effect.disabled || effect.isSuppressed) return;
-            
             let actor;
             if (effect.parent instanceof Actor) actor = effect.parent;
-            else if (effect.parent?.parent instanceof Actor) actor = effect.parent.parent;
+            else if (effect.parent?.parent instanceof Actor)
+                actor = effect.parent.parent;
             else return;
-            
             if (!effect.changes?.some(c => c.key.startsWith("EAE."))) return;
-            
             let EAEeffects = getEffects(actor);
             EAE.applyEffects(actor, EAEeffects);
-        });
+        })
 
         Hooks.on("deleteActiveEffect", async (effect, options, userId) => {
             if (game.userId !== userId || effect.disabled || effect.isSuppressed) return;
-            
             let actor;
             if (effect.parent instanceof Actor) actor = effect.parent;
-            else if (effect.parent?.parent instanceof Actor) actor = effect.parent.parent;
+            else if (effect.parent?.parent instanceof Actor)
+                actor = effect.parent.parent;
             else return;
-            
             if (!effect.changes?.some(c => c.key.startsWith("EAE."))) return;
-            
             let EAEeffects = getEffects(actor);
             EAE.applyEffects(actor, EAEeffects);
-        });
+        })
 
         Hooks.on("createToken", (doc, options, userId) => {
             if (game.userId !== userId) return;
-            let EAEeffects = getEffects(doc.actor);
-            if (EAEeffects.length > 0) EAE.applyEffects(doc.actor, EAEeffects);
-        });
+            let EAEeffects = getEffects(doc.actor)
+            if (EAEeffects.length > 0) EAE.applyEffects(doc.actor, EAEeffects)
+        })
 
         Hooks.on("canvasReady", () => {
             const firstGM = game.users?.find(u => u.isGM && u.active);
             if (game.userId !== firstGM?.id) return;
-            let linkedTokens = canvas.tokens.placeables.filter(t => !t.document.link);
+            let linkedTokens = canvas.tokens.placeables.filter(t => !t.document.link)
             for (let token of linkedTokens) {
-                let EAEeffects = getEffects(token.actor);
-                if (EAEeffects.length > 0) EAE.applyEffects(token.actor, EAEeffects);
+                let EAEeffects = getEffects(token.actor)
+                if (EAEeffects.length > 0) EAE.applyEffects(token.actor, EAEeffects)
             }
-        });
+        })
 
         Hooks.on("updateItem", (item, change, options, userId) => {
             if (game.userId !== userId || !item.parent) return;
-            if (hasProperty(change, "system.equipped") || hasProperty(change, "system.attunement")) {
+            if (item.parent instanceof Actor) {
                 let actor = item.parent;
                 let EAEeffects = getEffects(actor);
                 EAE.applyEffects(actor, EAEeffects);
             }
-        });
-        
-        Hooks.on("createItem", (item, options, userId) => {
+        })
+
+        const createDeleteItem = (item, options, userId) => {
             if (game.userId !== userId || !(item.parent instanceof Actor)) return;
             if (!item.effects.some(e => e.changes.some(c => c.key.startsWith("EAE.")))) return;
             const actor = item.parent;
             EAE.applyEffects(actor, actor.appliedEffects);
-        });
-        
-        Hooks.on("deleteItem", (item, options, userId) => {
-            if (game.userId !== userId || !(item.parent instanceof Actor)) return;
-            if (!item.effects.some(e => e.changes.some(c => c.key.startsWith("EAE.")))) return;
-            const actor = item.parent;
-            EAE.applyEffects(actor, actor.appliedEffects);
-        });
+        };
+        Hooks.on("createItem", createDeleteItem);
+        Hooks.on("deleteItem", createDeleteItem);
+
+        const firstGM = game.users?.find(u => u.isGM && u.active);
+        if (game.userId !== firstGM?.id) return;
+        let linkedTokens = canvas.tokens.placeables.filter(t => !t.document.link)
+        for (let token of linkedTokens) {
+            let EAEeffects = getEffects(token.actor)
+            if (EAEeffects.length > 0) EAE.applyEffects(token.actor, EAEeffects)
+        }
     }
 
     static async applyEffects(entity, effects) {
@@ -115,7 +114,7 @@ class EAE {
 
             for (let change of changes) {
                 if (!change.key.includes("EAE")) continue;
-                let updateKey = change.key.slice(4);
+                let updateKey = change.key.slice(4)
                 if (updateKey.startsWith("detectionModes.")) {
                     const parts = updateKey.split(".");
                     if (parts.length === 3) {
@@ -126,12 +125,12 @@ class EAE {
                             [];                    
                         let dm = detectionModes.find(dm => dm.id === id);
                         if (!dm) {
-                            dm = { id, enabled: false, range: 0 };
+                            dm = { id, enabled: true, range: 0 };
                             detectionModes.push(dm);
                         }
                         const fakeChange = duplicate(change);
                         fakeChange.key = key;
-                        const result = EAE.apply(undefined, fakeChange, undefined, dm[key] ?? null);
+                        const result = EAE.apply(undefined, fakeChange, undefined, dm[key]);
                         if (result !== null) {
                             dm[key] = result;
                             const preValue = getProperty(originals, "detectionModes") || [];
@@ -139,38 +138,34 @@ class EAE {
                         }
                     }
                 } else {
-                    let preValue = getProperty(overrides, updateKey) || getProperty(originals, updateKey);
+                    let preValue = getProperty(overrides, updateKey) || getProperty(originals, updateKey)
                     let result = EAE.apply(entity, change, originals, preValue);
-                    if (change.key === "EAE.alpha") result = result * result;
+                    if (change.key === "EAE.alpha") result = result * result
                     if (result !== null) {
                         if (updateKey === "light.animation" && typeof result === "string") {
                             let resultTmp;
                             try {
                                 resultTmp = JSON.parse(result);
                             } catch (e) {
-                                let fixedJSON;
-                                try {
-                                    fixedJSON = result
-                                        .replace(/:\s*"([^"]*)"/g, function (match, p1) {
-                                            return ': "' + p1.replace(/:/g, '@colon@') + '"';
-                                        })
-                                        .replace(/:\s*'([^']*)'/g, function (match, p1) {
-                                            return ': "' + p1.replace(/:/g, '@colon@') + '"';
-                                        })
-                                        .replace(/(['"])?([a-z0-9A-Z_]+)(['"])?\s*:/g, '"$2": ')
-                                        .replace(/:\s*(['"])?([a-z0-9A-Z_]+)(['"])?/g, ':"$2"')
-                                        .replace(/@colon@/g, ':');
+                                var fixedJSON = result
 
-                                    try {
-                                        resultTmp = JSON.parse(fixedJSON);
-                                        for (const [key, value] of Object.entries(resultTmp)) {
-                                            resultTmp[key] = EAE.switchType(key, value);
-                                        }
-                                    } catch (jsonError) {
-                                        continue;
-                                    }
-                                } catch (err) {
-                                    continue;
+                                    .replace(/:\s*"([^"]*)"/g, function (match, p1) {
+                                        return ': "' + p1.replace(/:/g, '@colon@') + '"';
+                                    })
+
+                                    .replace(/:\s*'([^']*)'/g, function (match, p1) {
+                                        return ': "' + p1.replace(/:/g, '@colon@') + '"';
+                                    })
+
+                                    .replace(/(['"])?([a-z0-9A-Z_]+)(['"])?\s*:/g, '"$2": ')
+
+                                    .replace(/:\s*(['"])?([a-z0-9A-Z_]+)(['"])?/g, ':"$2"')
+
+                                    .replace(/@colon@/g, ':');
+
+                                resultTmp = JSON.parse(fixedJSON);
+                                for (const [key, value] of Object.entries(resultTmp)) {
+                                    resultTmp[key] = EAE.switchType(key, value)
                                 }
                             }
                             for (let [k, v] of Object.entries(resultTmp)) {
@@ -186,7 +181,7 @@ class EAE {
                                 const key = `sight.${k}`;
                                 const preValue = getProperty(originals, key);
                                 applyOverride(key, v, preValue);
-                            }
+                            };
                         }
                         else
                             applyOverride(updateKey, result, preValue);
@@ -209,9 +204,11 @@ class EAE {
                     removeDelta(key);
                 }
             }
+            console.log("ATE | Going to update token", token.document.id, overrides);
             await token.document.update(overrides);
         }
     }
+
 
     static apply(token, change, originals, preValue) {
         const modes = CONST.ACTIVE_EFFECT_MODES;
@@ -229,20 +226,20 @@ class EAE {
     }
 
     static switchType(key, value) {
-        let numeric = ["light.dim", "light.bright", "dim", "bright", "scale", "height", "width", "light.angle", "light.alpha", "rotation", "speed", "intensity"];
-        let Boolean = ["mirrorX", "mirrorY", "light.gradual", "vision"];
-        if (numeric.includes(key)) return parseFloat(value);
+        let numeric = ["light.dim", "light.bright", "dim", "bright", "scale", "height", "width", "light.angle", "light.alpha", "rotation", "speed", "intensity"]
+        let Boolean = ["mirrorX", "mirrorY", "light.gradual", "vision"]
+        if (numeric.includes(key)) return parseFloat(value)
         else if (Boolean.includes(key)) {
-            if (value === "true") return true;
-            if (value === "false") return false;
+            if (value === "true") return true
+            if (value === "false") return false
         }
-        else return value;
+        else return value
     }
 
     static applyAdd(token, change, originals, current) {
         let { key, value } = change;
-        key = key.slice(4);
-        value = EAE.switchType(key, value);
+        key = key.slice(4)
+        value = EAE.switchType(key, value)
         const ct = getType(current);
         let update = null;
 
@@ -264,27 +261,27 @@ class EAE {
 
     static applyMultiply(token, change, originals, current) {
         let { key, value } = change;
-        key = key.slice(4);
-        value = EAE.switchType(key, value);
+        key = key.slice(4)
+        value = EAE.switchType(key, value)
 
-        if ((typeof (current) !== "number") || (typeof (value) !== "number")) return null;
+        if ((typeof(current) !== "number") || (typeof(value) !== "number")) return null;
         const update = current * value;
         return update;
     }
 
     static applyOverride(token, change, originals, current) {
         let { key, value, mode } = change;
-        key = key.slice(4);
-        value = EAE.switchType(key, value);
+        key = key.slice(4)
+        value = EAE.switchType(key, value)
         if (mode === CONST.ACTIVE_EFFECT_MODES.UPGRADE) {
-            if ((typeof (current) === "number") && (current >= Number(value))) return null;
+            if ((typeof(current) === "number") && (current >= Number(value))) return null;
         }
         if (mode === CONST.ACTIVE_EFFECT_MODES.DOWNGRADE) {
-            if ((typeof (current) === "number") && (current < Number(value))) return null;
+            if ((typeof(current) === "number") && (current < Number(value))) return null;
         }
         if (typeof current === "number") return Number(value);
         return value;
     }
 }
 
-Hooks.once('ready', EAE.ready);
+Hooks.on('ready', EAE.ready);

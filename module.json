@@ -1,32 +1,23 @@
 {
-  "id": "enhanced-active-effects",
-  "title": "Enhanced Active Effects",
-  "description": "A small module for applying lighting and vision effects to tokens through Active Effects.",
-  "version": "1.0.0",
-  "authors": [
-    {
-      "name": "Conjectural Technologies",
-      "url": "https://github.com/Conjectural-Technologies",
-      "flags": {}
-    }
-  ],
-  "esmodules": [
-    "scripts/enhanced-active-effects.js"
-  ],
-  "compatibility": {
-    "minimum": "12.331",
-    "verified": "13"
-  },
-  "relationships": {
-    "systems": [
+    "id": "enhanced-active-effects",
+    "title": "Enhanced Active Effects",
+    "description": "A small module for applying lighting and vision effects to tokens through the Active Effects system.",
+    "version": "1.0.0",
+    "authors": [
       {
-        "id": "dnd5e",
-        "type": "system",
-        "compatibility": {}
+        "name": "Conjectural Technologies",
+        "url": "https://github.com/Conjectural-Technologies",
+        "flags": {}
       }
-    ]
-  },
-  "url": "https://github.com/Conjectural-Technologies/enhanced-active-effects",
-  "manifest": "https://raw.githubusercontent.com/Conjectural-Technologies/enhanced-active-effects/main/module.json",
-  "download": "https://github.com/Conjectural-Technologies/enhanced-active-effects/archive/refs/tags/v1.0.0.zip"
-}
+    ],
+    "esmodules": [
+      "scripts/enhanced-active-effects.js"
+    ],
+    "compatibility": {
+      "minimum": "12.331",
+      "verified": "13"
+    },
+    "url": "https://github.com/Conjectural-Technologies/enhanced-active-effects",
+    "manifest": "https://raw.githubusercontent.com/Conjectural-Technologies/enhanced-active-effects/main/module.json",
+    "download": "https://github.com/Conjectural-Technologies/enhanced-active-effects/archive/refs/tags/v1.0.0.zip"
+  }

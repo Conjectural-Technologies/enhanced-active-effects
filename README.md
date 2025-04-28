@@ -1,84 +1,74 @@
 # Enhanced Active Effects
 
-A small module for applying lighting and vision effects to tokens through Active Effects in Foundry VTT.
+A Foundry VTT module that extends the Active Effects system to control token lighting and vision effects.
 
-## Description
+## Overview
 
-Enhanced Active Effects (EAE) allows you to manipulate token lighting, vision, and appearance through the Active Effects system in Foundry VTT. This module makes it easy to create dynamic lighting effects that automatically apply when conditions, items, or spells are active on a character.
+Enhanced Active Effects (EAE) integrates with Foundry VTT's existing Active Effects system to allow dynamic control of token lighting and vision properties. This enables game masters and players to apply visual effects to tokens through the familiar Active Effects interface, triggered by items, abilities, or status effects.
 
 ## Features
 
-- Apply changes to token lighting (brightness, color, animation)
-- Modify token vision properties (range, modes)
-- Change detection modes for tokens
-- Support for temporary size adjustments
-- Works with both linked and unlinked tokens
-- Compatible with items that grant lighting effects
+- Apply lighting effects (color, brightness, animation) via Active Effects
+- Modify token vision properties (vision modes, detection types)
+- Seamless integration with the existing Active Effects system
+- Automatic application when tokens are created or updated
+- Support for both actor-linked and unlinked tokens
+- System-agnostic design works with any game system
 
-## Installation
+## How It Works
 
-1. In the Foundry VTT setup screen, navigate to the "Add-on Modules" tab
-2. Click "Install Module"
-3. Search for "Enhanced Active Effects" or paste the following manifest URL:
-   ```
-   https://raw.githubusercontent.com/Conjectural-Technologies/enhanced-active-effects/main/module.json
-   ```
-4. Click "Install"
+The module monitors Active Effects with keys that start with `EAE.` and applies them to the token's properties. For example:
 
-## Usage
+- `EAE.light.color`: Changes the token's light color
+- `EAE.light.dim`: Modifies the dim light radius
+- `EAE.light.bright`: Adjusts the bright light radius
+- `EAE.light.animation`: Sets light animation properties
+- `EAE.sight.visionMode`: Changes the token's vision mode
 
-### Creating Effects
+## Technical Analysis
 
-Enhanced Active Effects uses the standard Active Effect system in Foundry VTT. When creating an effect, prefix any token property with `EAE.` to have it affect the token.
+The module operates by:
 
-#### Available Properties:
+1. Tracking Active Effects with keys prefixed by "EAE."
+2. Converting these effects into token property updates
+3. Maintaining original token settings to restore them when effects end
+4. Supporting multiple effect application modes (ADD, MULTIPLY, OVERRIDE, etc.)
+5. Handling special cases like vision modes and detection methods
 
-- `EAE.light.bright` - Bright light radius
-- `EAE.light.dim` - Dim light radius
-- `EAE.light.color` - Light color
-- `EAE.light.alpha` - Light intensity
-- `EAE.light.animation` - Light animation (JSON format)
-- `EAE.light.angle` - Light angle
-- `EAE.light.gradual` - Gradual light (boolean)
-- `EAE.sight.visionMode` - Vision mode
-- `EAE.brightSight` - Bright sight radius
-- `EAE.dimSight` - Dim sight radius
-- `EAE.detectionModes.[id].range` - Detection mode range
-- `EAE.detectionModes.[id].enabled` - Detection mode enabled (boolean)
-- `EAE.alpha` - Token opacity
-- `EAE.scale` - Token scale
-- `EAE.width` - Token width
-- `EAE.height` - Token height
-- `EAE.rotation` - Token rotation
-- `EAE.mirrorX` - Horizontal mirroring (boolean)
-- `EAE.mirrorY` - Vertical mirroring (boolean)
+The code implements several Foundry hooks to ensure effects are applied:
+- When effects are created, updated, or deleted
+- When tokens are created or the canvas is ready
+- When items are equipped or unequipped (using system-agnostic methods)
 
-### Example Effect
+## Usage Examples
 
-Creating a torch effect on an item:
+### Basic Light Effect
 
-1. Create a new item or edit an existing one
-2. Add an Active Effect
-3. Add the following changes:
-   - `EAE.light.bright` = 20 (OVERRIDE)
-   - `EAE.light.dim` = 40 (OVERRIDE)
-   - `EAE.light.color` = "#f8c377" (OVERRIDE)
-   - `EAE.light.animation` = `{"type": "torch", "speed": 1, "intensity": 1}` (OVERRIDE)
+An Active Effect with the following changes:
+- Key: `EAE.light.dim` | Mode: Override | Value: `20`
+- Key: `EAE.light.bright` | Mode: Override | Value: `10`
+- Key: `EAE.light.color` | Mode: Override | Value: `#ff3300`
+
+### Darkvision
+
+An Active Effect with:
+- Key: `EAE.sight.visionMode` | Mode: Override | Value: `darkvision`
+
+### Dancing Lights Animation
+
+An Active Effect with:
+- Key: `EAE.light.animation` | Mode: Override | Value: `{"type": "torch", "speed": 5, "intensity": 5}`
 
 ## Compatibility
 
-- Requires Foundry VTT v12.331 or higher
-- Verified compatible with Foundry VTT v13
-- Designed for D&D 5e system
-
-## Support
-
-For issues or feature requests, please visit the [GitHub repository](https://github.com/Conjectural-Technologies/enhanced-active-effects).
+- Minimum Foundry VTT version: 12.331
+- Verified on Foundry VTT version: 13
+- Compatible with all Foundry VTT game systems
 
 ## License
 
-This module is licensed under the [MIT License](./LICENSE).
+This module is licensed under the MIT License. See the LICENSE file for details.
 
 ## Credits
 
-Original development by Conjectural Technologies.
+Created by Conjectural Technologies
