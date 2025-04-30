@@ -1,11 +1,11 @@
 const { deepClone, duplicate, flattenObject, getProperty, hasProperty, mergeObject, setProperty } = foundry.utils;
 
-class EAE {
+class enhanced {
 
     static async ready() {
         const getEffects = (actor) => {
             if (!actor) return [];
-            return actor.appliedEffects.filter(e => e.changes.some(c => c.key.startsWith("EAE.")));
+            return actor.appliedEffects.filter(e => e.changes.some(c => c.key.startsWith("enhanced.")));
         };
 
         Hooks.on("updateActiveEffect", async (effect, change, options, userId) => {
@@ -15,8 +15,8 @@ class EAE {
             else if (effect.parent?.parent instanceof Actor)
                 actor = effect.parent.parent;
             else return;
-            let EAEeffects = getEffects(actor);
-            EAE.applyEffects(actor, EAEeffects);
+            let enhancedEffects = getEffects(actor);
+            enhanced.applyEffects(actor, enhancedEffects);
         })
 
         Hooks.on("createActiveEffect", async (effect, options, userId) => {
@@ -26,9 +26,9 @@ class EAE {
             else if (effect.parent?.parent instanceof Actor)
                 actor = effect.parent.parent;
             else return;
-            if (!effect.changes?.some(c => c.key.startsWith("EAE."))) return;
-            let EAEeffects = getEffects(actor);
-            EAE.applyEffects(actor, EAEeffects);
+            if (!effect.changes?.some(c => c.key.startsWith("enhanced."))) return;
+            let enhancedEffects = getEffects(actor);
+            enhanced.applyEffects(actor, enhancedEffects);
         })
 
         Hooks.on("deleteActiveEffect", async (effect, options, userId) => {
@@ -38,15 +38,15 @@ class EAE {
             else if (effect.parent?.parent instanceof Actor)
                 actor = effect.parent.parent;
             else return;
-            if (!effect.changes?.some(c => c.key.startsWith("EAE."))) return;
-            let EAEeffects = getEffects(actor);
-            EAE.applyEffects(actor, EAEeffects);
+            if (!effect.changes?.some(c => c.key.startsWith("enhanced."))) return;
+            let enhancedEffects = getEffects(actor);
+            enhanced.applyEffects(actor, enhancedEffects);
         })
 
         Hooks.on("createToken", (doc, options, userId) => {
             if (game.userId !== userId) return;
-            let EAEeffects = getEffects(doc.actor)
-            if (EAEeffects.length > 0) EAE.applyEffects(doc.actor, EAEeffects)
+            let enhancedEffects = getEffects(doc.actor)
+            if (enhancedEffects.length > 0) enhanced.applyEffects(doc.actor, enhancedEffects)
         })
 
         Hooks.on("canvasReady", () => {
@@ -54,8 +54,8 @@ class EAE {
             if (game.userId !== firstGM?.id) return;
             let linkedTokens = canvas.tokens.placeables.filter(t => !t.document.link)
             for (let token of linkedTokens) {
-                let EAEeffects = getEffects(token.actor)
-                if (EAEeffects.length > 0) EAE.applyEffects(token.actor, EAEeffects)
+                let enhancedEffects = getEffects(token.actor)
+                if (enhancedEffects.length > 0) enhanced.applyEffects(token.actor, enhancedEffects)
             }
         })
 
@@ -63,16 +63,16 @@ class EAE {
             if (game.userId !== userId || !item.parent) return;
             if (item.parent instanceof Actor) {
                 let actor = item.parent;
-                let EAEeffects = getEffects(actor);
-                EAE.applyEffects(actor, EAEeffects);
+                let enhancedEffects = getEffects(actor);
+                enhanced.applyEffects(actor, enhancedEffects);
             }
         })
 
         const createDeleteItem = (item, options, userId) => {
             if (game.userId !== userId || !(item.parent instanceof Actor)) return;
-            if (!item.effects.some(e => e.changes.some(c => c.key.startsWith("EAE.")))) return;
+            if (!item.effects.some(e => e.changes.some(c => c.key.startsWith("enhanced.")))) return;
             const actor = item.parent;
-            EAE.applyEffects(actor, actor.appliedEffects);
+            enhanced.applyEffects(actor, actor.appliedEffects);
         };
         Hooks.on("createItem", createDeleteItem);
         Hooks.on("deleteItem", createDeleteItem);
@@ -81,8 +81,8 @@ class EAE {
         if (game.userId !== firstGM?.id) return;
         let linkedTokens = canvas.tokens.placeables.filter(t => !t.document.link)
         for (let token of linkedTokens) {
-            let EAEeffects = getEffects(token.actor)
-            if (EAEeffects.length > 0) EAE.applyEffects(token.actor, EAEeffects)
+            let enhancedEffects = getEffects(token.actor)
+            if (enhancedEffects.length > 0) enhanced.applyEffects(token.actor, enhancedEffects)
         }
     }
 
@@ -103,7 +103,7 @@ class EAE {
         changes.sort((a, b) => a.priority - b.priority);
 
         for (const token of tokenArray) {
-            let originalDelta = token.document.flags.EAE?.originals || {};
+            let originalDelta = token.document.flags.enhanced?.originals || {};
             const originals = mergeObject(token.document.toObject(), originalDelta);
             let overrides = {};
 
@@ -113,8 +113,8 @@ class EAE {
             };
 
             for (let change of changes) {
-                if (!change.key.includes("EAE")) continue;
-                let updateKey = change.key.slice(4)
+                if (!change.key.includes("enhanced")) continue;
+                let updateKey = change.key.slice(9)
                 if (updateKey.startsWith("detectionModes.")) {
                     const parts = updateKey.split(".");
                     if (parts.length === 3) {
@@ -130,7 +130,7 @@ class EAE {
                         }
                         const fakeChange = duplicate(change);
                         fakeChange.key = key;
-                        const result = EAE.apply(undefined, fakeChange, undefined, dm[key]);
+                        const result = enhanced.apply(undefined, fakeChange, undefined, dm[key]);
                         if (result !== null) {
                             dm[key] = result;
                             const preValue = getProperty(originals, "detectionModes") || [];
@@ -139,8 +139,8 @@ class EAE {
                     }
                 } else {
                     let preValue = getProperty(overrides, updateKey) || getProperty(originals, updateKey)
-                    let result = EAE.apply(entity, change, originals, preValue);
-                    if (change.key === "EAE.alpha") result = result * result
+                    let result = enhanced.apply(entity, change, originals, preValue);
+                    if (change.key === "enhanced.alpha") result = result * result
                     if (result !== null) {
                         if (updateKey === "light.animation" && typeof result === "string") {
                             let resultTmp;
@@ -165,7 +165,7 @@ class EAE {
 
                                 resultTmp = JSON.parse(fixedJSON);
                                 for (const [key, value] of Object.entries(resultTmp)) {
-                                    resultTmp[key] = EAE.switchType(key, value)
+                                    resultTmp[key] = enhanced.switchType(key, value)
                                 }
                             }
                             for (let [k, v] of Object.entries(resultTmp)) {
@@ -189,18 +189,18 @@ class EAE {
                 }
             }
 
-            overrides["flags.EAE.originals"] = originalDelta;
+            overrides["flags.enhanced.originals"] = originalDelta;
             overrides = flattenObject(overrides);
             const removeDelta = (key) => {
                 const head = key.split(".");
                 const tail = `-=${head.pop()}`;
-                key = ["flags", "EAE", "originals", ...head, tail].join(".");
+                key = ["flags", "enhanced", "originals", ...head, tail].join(".");
                 overrides[key] = null;
             };
             for (const [key, value] of Object.entries(flattenObject(originalDelta))) {
                 if (!(key in overrides)) {
                     overrides[key] = value;
-                    delete overrides[`flags.EAE.originals.${key}`];
+                    delete overrides[`flags.enhanced.originals.${key}`];
                     removeDelta(key);
                 }
             }
@@ -214,14 +214,14 @@ class EAE {
         const modes = CONST.ACTIVE_EFFECT_MODES;
         switch (change.mode) {
             case modes.ADD:
-                return EAE.applyAdd(token, change, originals, preValue);
+                return enhanced.applyAdd(token, change, originals, preValue);
             case modes.MULTIPLY:
-                return EAE.applyMultiply(token, change, originals, preValue);
+                return enhanced.applyMultiply(token, change, originals, preValue);
             case modes.OVERRIDE:
             case modes.CUSTOM:
             case modes.UPGRADE:
             case modes.DOWNGRADE:
-                return EAE.applyOverride(token, change, originals, preValue);
+                return enhanced.applyOverride(token, change, originals, preValue);
         }
     }
 
@@ -238,8 +238,8 @@ class EAE {
 
     static applyAdd(token, change, originals, current) {
         let { key, value } = change;
-        key = key.slice(4)
-        value = EAE.switchType(key, value)
+        key = key.slice(9)
+        value = enhanced.switchType(key, value)
         const ct = getType(current);
         let update = null;
 
@@ -261,8 +261,8 @@ class EAE {
 
     static applyMultiply(token, change, originals, current) {
         let { key, value } = change;
-        key = key.slice(4)
-        value = EAE.switchType(key, value)
+        key = key.slice(9)
+        value = enhanced.switchType(key, value)
 
         if ((typeof(current) !== "number") || (typeof(value) !== "number")) return null;
         const update = current * value;
@@ -271,8 +271,8 @@ class EAE {
 
     static applyOverride(token, change, originals, current) {
         let { key, value, mode } = change;
-        key = key.slice(4)
-        value = EAE.switchType(key, value)
+        key = key.slice(9)
+        value = enhanced.switchType(key, value)
         if (mode === CONST.ACTIVE_EFFECT_MODES.UPGRADE) {
             if ((typeof(current) === "number") && (current >= Number(value))) return null;
         }
@@ -284,4 +284,4 @@ class EAE {
     }
 }
 
-Hooks.on('ready', EAE.ready);
+Hooks.on('ready', enhanced.ready);

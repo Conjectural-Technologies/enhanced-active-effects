@@ -4,7 +4,7 @@ A Foundry VTT module that extends the Active Effects system to control token lig
 
 ## Overview
 
-Enhanced Active Effects (EAE) integrates with Foundry VTT's existing Active Effects system to allow dynamic control of token lighting and vision properties. This enables game masters and players to apply visual effects to tokens through the familiar Active Effects interface, triggered by items, abilities, or status effects.
+Enhanced Active Effects integrates with Foundry VTT's existing Active Effects system to allow dynamic control of token lighting and vision properties. This enables game masters and players to apply visual effects to tokens through the familiar Active Effects interface, triggered by items, abilities, or status effects.
 
 ## Features
 
@@ -17,19 +17,19 @@ Enhanced Active Effects (EAE) integrates with Foundry VTT's existing Active Effe
 
 ## How It Works
 
-The module monitors Active Effects with keys that start with `EAE.` and applies them to the token's properties. For example:
+The module monitors Active Effects with keys that start with `enhanced.` and applies them to the token's properties. For example:
 
-- `EAE.light.color`: Changes the token's light color
-- `EAE.light.dim`: Modifies the dim light radius
-- `EAE.light.bright`: Adjusts the bright light radius
-- `EAE.light.animation`: Sets light animation properties
-- `EAE.sight.visionMode`: Changes the token's vision mode
+- `enhanced.light.color`: Changes the token's light color
+- `enhanced.light.dim`: Modifies the dim light radius
+- `enhanced.light.bright`: Adjusts the bright light radius
+- `enhanced.light.animation`: Sets light animation properties
+- `enhanced.sight.visionMode`: Changes the token's vision mode
 
 ## Technical Analysis
 
 The module operates by:
 
-1. Tracking Active Effects with keys prefixed by "EAE."
+1. Tracking Active Effects with keys prefixed by "enhanced."
 2. Converting these effects into token property updates
 3. Maintaining original token settings to restore them when effects end
 4. Supporting multiple effect application modes (ADD, MULTIPLY, OVERRIDE, etc.)
@@ -45,19 +45,19 @@ The code implements several Foundry hooks to ensure effects are applied:
 ### Basic Light Effect
 
 An Active Effect with the following changes:
-- Key: `EAE.light.dim` | Mode: Override | Value: `20`
-- Key: `EAE.light.bright` | Mode: Override | Value: `10`
-- Key: `EAE.light.color` | Mode: Override | Value: `#ff3300`
+- Key: `enhanced.light.dim` | Mode: Override | Value: `20`
+- Key: `enhanced.light.bright` | Mode: Override | Value: `10`
+- Key: `enhanced.light.color` | Mode: Override | Value: `#ff3300`
 
 ### Darkvision
 
 An Active Effect with:
-- Key: `EAE.sight.visionMode` | Mode: Override | Value: `darkvision`
+- Key: `enhanced.sight.visionMode` | Mode: Override | Value: `darkvision`
 
 ### Dancing Lights Animation
 
 An Active Effect with:
-- Key: `EAE.light.animation` | Mode: Override | Value: `{"type": "torch", "speed": 5, "intensity": 5}`
+- Key: `enhanced.light.animation` | Mode: Override | Value: `{"type": "torch", "speed": 5, "intensity": 5}`
 
 ## Compatibility
 
