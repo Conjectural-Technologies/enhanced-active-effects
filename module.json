@@ -1,23 +1,60 @@
 {
-    "id": "enhanced-active-effects",
-    "title": "Enhanced Active Effects",
-    "description": "A small module for applying lighting and vision effects to tokens through the Active Effects system.",
-    "version": "1.0.0",
-    "authors": [
-      {
-        "name": "Conjectural Technologies",
-        "url": "https://github.com/Conjectural-Technologies",
-        "flags": {}
+  "id": "enhanced-active-effects",
+  "title": "Enhanced Active Effects",
+  "description": "<p>A small module for applying lighting and vision effects to tokens through the Active Effects system.</p>",
+  "version": "1.0.0",
+  "authors": [
+    {
+      "name": "Conjectural Technologies",
+      "url": "https://github.com/Conjectural-Technologies",
+      "flags": {}
+    }
+  ],
+  "esmodules": [
+    "scripts/enhanced-active-effects.js"
+  ],
+  "compatibility": {
+    "minimum": "13",
+    "verified": "13"
+  },
+  "url": "https://github.com/Conjectural-Technologies/enhanced-active-effects",
+  "manifest": "https://raw.githubusercontent.com/Conjectural-Technologies/enhanced-active-effects/main/module.json",
+  "download": "https://github.com/Conjectural-Technologies/enhanced-active-effects/archive/refs/tags/v1.0.0.zip",
+  "packs": [
+    {
+      "name": "journal-entries",
+      "label": "Journal Entries",
+      "path": "packs/journal-entries",
+      "type": "JournalEntry",
+      "system": "dnd5e",
+      "ownership": {
+        "PLAYER": "OBSERVER",
+        "ASSISTANT": "OWNER"
       }
-    ],
-    "esmodules": [
-      "scripts/enhanced-active-effects.js"
-    ],
-    "compatibility": {
-      "minimum": "12.331",
-      "verified": "13"
     },
-    "url": "https://github.com/Conjectural-Technologies/enhanced-active-effects",
-    "manifest": "https://raw.githubusercontent.com/Conjectural-Technologies/enhanced-active-effects/main/module.json",
-    "download": "https://github.com/Conjectural-Technologies/enhanced-active-effects/archive/refs/tags/v1.0.0.zip"
-  }
+    {
+      "name": "items",
+      "label": "Items",
+      "path": "packs/items",
+      "type": "Item",
+      "ownership": {
+        "PLAYER": "OBSERVER",
+        "ASSISTANT": "OWNER"
+      },
+      "system": "dnd5e"
+    }
+  ],
+  "packFolders": [
+    {
+      "name": "Enhanced Active Effects",
+      "color": "#ff7f00",
+      "sorting": "m",
+      "packs": [
+        "items",
+        "journal-entries"
+      ],
+      "folders": []
+    }
+  ],
+  "flags": {}
+}
