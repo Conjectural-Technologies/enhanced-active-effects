@@ -204,7 +204,7 @@ class enhanced {
                     removeDelta(key);
                 }
             }
-            console.log("ATE | Going to update token", token.document.id, overrides);
+            console.log("enhanced | Going to update token", token.document.id, overrides);
             await token.document.update(overrides);
         }
     }
