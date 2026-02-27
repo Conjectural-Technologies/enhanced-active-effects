@@ -1,89 +1,63 @@
-const { deepClone, duplicate, flattenObject, getProperty, hasProperty, mergeObject, setProperty } = foundry.utils;
+const { deepClone, flattenObject, getProperty, hasProperty, mergeObject, setProperty, getType } = foundry.utils;
 
 class enhanced {
-
     static async ready() {
         const getEffects = (actor) => {
             if (!actor) return [];
             return actor.appliedEffects.filter(e => e.changes.some(c => c.key.startsWith("enhanced.")));
         };
 
-        Hooks.on("updateActiveEffect", async (effect, change, options, userId) => {
-            if (game.userId !== userId) return;
-            let actor;
-            if (effect.parent instanceof Actor) actor = effect.parent;
-            else if (effect.parent?.parent instanceof Actor)
-                actor = effect.parent.parent;
-            else return;
-            let enhancedEffects = getEffects(actor);
-            enhanced.applyEffects(actor, enhancedEffects);
-        })
+        const getActorFromEffect = (effect) => {
+            if (effect.parent instanceof Actor) return effect.parent;
+            if (effect.parent?.parent instanceof Actor) return effect.parent.parent;
+            return null;
+        };
 
-        Hooks.on("createActiveEffect", async (effect, options, userId) => {
+        // 1. CONSOLIDATED HOOK LOGIC
+        const handleEffectUpdate = (effect, userId) => {
             if (game.userId !== userId || effect.disabled || effect.isSuppressed) return;
-            let actor;
-            if (effect.parent instanceof Actor) actor = effect.parent;
-            else if (effect.parent?.parent instanceof Actor)
-                actor = effect.parent.parent;
-            else return;
             if (!effect.changes?.some(c => c.key.startsWith("enhanced."))) return;
-            let enhancedEffects = getEffects(actor);
-            enhanced.applyEffects(actor, enhancedEffects);
-        })
+            
+            const actor = getActorFromEffect(effect);
+            if (actor) enhanced.applyEffects(actor, getEffects(actor));
+        };
 
-        Hooks.on("deleteActiveEffect", async (effect, options, userId) => {
-            if (game.userId !== userId || effect.disabled || effect.isSuppressed) return;
-            let actor;
-            if (effect.parent instanceof Actor) actor = effect.parent;
-            else if (effect.parent?.parent instanceof Actor)
-                actor = effect.parent.parent;
-            else return;
-            if (!effect.changes?.some(c => c.key.startsWith("enhanced."))) return;
-            let enhancedEffects = getEffects(actor);
-            enhanced.applyEffects(actor, enhancedEffects);
-        })
+        Hooks.on("createActiveEffect", (effect, options, userId) => handleEffectUpdate(effect, userId));
+        Hooks.on("updateActiveEffect", (effect, change, options, userId) => handleEffectUpdate(effect, userId));
+        Hooks.on("deleteActiveEffect", (effect, options, userId) => handleEffectUpdate(effect, userId));
 
         Hooks.on("createToken", (doc, options, userId) => {
             if (game.userId !== userId) return;
-            let enhancedEffects = getEffects(doc.actor)
-            if (enhancedEffects.length > 0) enhanced.applyEffects(doc.actor, enhancedEffects)
-        })
+            const enhancedEffects = getEffects(doc.actor);
+            if (enhancedEffects.length > 0) enhanced.applyEffects(doc.actor, enhancedEffects);
+        });
 
         Hooks.on("canvasReady", () => {
             const firstGM = game.users?.find(u => u.isGM && u.active);
             if (game.userId !== firstGM?.id) return;
-            let linkedTokens = canvas.tokens.placeables.filter(t => !t.document.link)
-            for (let token of linkedTokens) {
-                let enhancedEffects = getEffects(token.actor)
-                if (enhancedEffects.length > 0) enhanced.applyEffects(token.actor, enhancedEffects)
+            
+            const linkedTokens = canvas.tokens.placeables.filter(t => !t.document.link);
+            for (const token of linkedTokens) {
+                const enhancedEffects = getEffects(token.actor);
+                if (enhancedEffects.length > 0) enhanced.applyEffects(token.actor, enhancedEffects);
             }
-        })
+        });
 
         Hooks.on("updateItem", (item, change, options, userId) => {
-            if (game.userId !== userId || !item.parent) return;
-            if (item.parent instanceof Actor) {
-                let actor = item.parent;
-                let enhancedEffects = getEffects(actor);
-                enhanced.applyEffects(actor, enhancedEffects);
-            }
-        })
+            if (game.userId !== userId || !(item.parent instanceof Actor)) return;
+            const actor = item.parent;
+            enhanced.applyEffects(actor, getEffects(actor));
+        });
 
-        const createDeleteItem = (item, options, userId) => {
+        const handleItemChange = (item, options, userId) => {
             if (game.userId !== userId || !(item.parent instanceof Actor)) return;
             if (!item.effects.some(e => e.changes.some(c => c.key.startsWith("enhanced.")))) return;
+            
             const actor = item.parent;
-            enhanced.applyEffects(actor, actor.appliedEffects);
+            enhanced.applyEffects(actor, getEffects(actor)); // Optimized: Only pass active enhanced effects, not all appliedEffects
         };
-        Hooks.on("createItem", createDeleteItem);
-        Hooks.on("deleteItem", createDeleteItem);
-
-        const firstGM = game.users?.find(u => u.isGM && u.active);
-        if (game.userId !== firstGM?.id) return;
-        let linkedTokens = canvas.tokens.placeables.filter(t => !t.document.link)
-        for (let token of linkedTokens) {
-            let enhancedEffects = getEffects(token.actor)
-            if (enhancedEffects.length > 0) enhanced.applyEffects(token.actor, enhancedEffects)
-        }
+        Hooks.on("createItem", handleItemChange);
+        Hooks.on("deleteItem", handleItemChange);
     }
 
     static async applyEffects(entity, effects) {
@@ -91,18 +65,19 @@ class enhanced {
         const tokenArray = entity.getActiveTokens();
         if (!tokenArray.length) return;
 
-        const changes = effects.reduce((changes, e) => {
-            if (e.disabled || e.isSuppressed) return changes;
-            return changes.concat(e.changes.map(c => {
-                c = duplicate(c);
-                c.effect = e;
-                c.priority = c.priority ?? (c.mode * 10);
-                return c;
+        // 2. REPLACED DUPLICATE WITH DEEPCLONE (V13 Standard)
+        const changes = effects.reduce((acc, e) => {
+            if (e.disabled || e.isSuppressed) return acc;
+            return acc.concat(e.changes.map(c => {
+                const clonedChange = deepClone(c);
+                clonedChange.effect = e;
+                clonedChange.priority = clonedChange.priority ?? (clonedChange.mode * 10);
+                return clonedChange;
             }));
-        }, []);
-        changes.sort((a, b) => a.priority - b.priority);
+        }, []).sort((a, b) => a.priority - b.priority);
 
-        for (const token of tokenArray) {
+        // 3. PARALLEL TOKEN UPDATES
+        const tokenUpdatePromises = tokenArray.map(async (token) => {
             let originalDelta = token.document.flags.enhanced?.originals || {};
             const originals = mergeObject(token.document.toObject(), originalDelta);
             let overrides = {};
@@ -112,25 +87,26 @@ class enhanced {
                 if (!hasProperty(originalDelta, key)) setProperty(originalDelta, key, preValue);
             };
 
-            for (let change of changes) {
+            for (const change of changes) {
                 if (!change.key.includes("enhanced")) continue;
-                let updateKey = change.key.slice(9)
+                const updateKey = change.key.slice(9);
+
                 if (updateKey.startsWith("detectionModes.")) {
                     const parts = updateKey.split(".");
                     if (parts.length === 3) {
                         const [_, id, key] = parts;
-                        const detectionModes =
-                            getProperty(overrides, "detectionModes") ||
-                            duplicate(getProperty(originals, "detectionModes")) ||
-                            [];                    
+                        const detectionModes = getProperty(overrides, "detectionModes") || deepClone(getProperty(originals, "detectionModes")) || [];                    
                         let dm = detectionModes.find(dm => dm.id === id);
+                        
                         if (!dm) {
                             dm = { id, enabled: true, range: 0 };
                             detectionModes.push(dm);
                         }
-                        const fakeChange = duplicate(change);
+                        
+                        const fakeChange = deepClone(change);
                         fakeChange.key = key;
                         const result = enhanced.apply(undefined, fakeChange, undefined, dm[key]);
+                        
                         if (result !== null) {
                             dm[key] = result;
                             const preValue = getProperty(originals, "detectionModes") || [];
@@ -138,65 +114,60 @@ class enhanced {
                         }
                     }
                 } else {
-                    let preValue = getProperty(overrides, updateKey) || getProperty(originals, updateKey)
+                    const preValue = getProperty(overrides, updateKey) || getProperty(originals, updateKey);
                     let result = enhanced.apply(entity, change, originals, preValue);
-                    if (change.key === "enhanced.alpha") result = result * result
+                    
+                    if (change.key === "enhanced.alpha") result = result * result;
+                    
                     if (result !== null) {
                         if (updateKey === "light.animation" && typeof result === "string") {
                             let resultTmp;
                             try {
                                 resultTmp = JSON.parse(result);
                             } catch (e) {
-                                var fixedJSON = result
-
-                                    .replace(/:\s*"([^"]*)"/g, function (match, p1) {
-                                        return ': "' + p1.replace(/:/g, '@colon@') + '"';
-                                    })
-
-                                    .replace(/:\s*'([^']*)'/g, function (match, p1) {
-                                        return ': "' + p1.replace(/:/g, '@colon@') + '"';
-                                    })
-
+                                // 4. FIXED VAR SCOPING
+                                const fixedJSON = result
+                                    .replace(/:\s*"([^"]*)"/g, (match, p1) => ': "' + p1.replace(/:/g, '@colon@') + '"')
+                                    .replace(/:\s*'([^']*)'/g, (match, p1) => ': "' + p1.replace(/:/g, '@colon@') + '"')
                                     .replace(/(['"])?([a-z0-9A-Z_]+)(['"])?\s*:/g, '"$2": ')
-
                                     .replace(/:\s*(['"])?([a-z0-9A-Z_]+)(['"])?/g, ':"$2"')
-
                                     .replace(/@colon@/g, ':');
 
                                 resultTmp = JSON.parse(fixedJSON);
                                 for (const [key, value] of Object.entries(resultTmp)) {
-                                    resultTmp[key] = enhanced.switchType(key, value)
+                                    resultTmp[key] = enhanced.switchType(key, value);
                                 }
                             }
-                            for (let [k, v] of Object.entries(resultTmp)) {
+                            for (const [k, v] of Object.entries(resultTmp)) {
                                 const key = `${updateKey}.${k}`;
                                 const preValue = getProperty(originals, key);
                                 applyOverride(key, v, preValue);
                             }
-                        }
-                        else if (updateKey === "sight.visionMode") {
+                        } else if (updateKey === "sight.visionMode") {
                             applyOverride(updateKey, result, preValue);
                             const visionDefaults = CONFIG.Canvas.visionModes[result]?.vision?.defaults || {};
-                            for (let [k, v] of Object.entries(visionDefaults)) {
+                            for (const [k, v] of Object.entries(visionDefaults)) {
                                 const key = `sight.${k}`;
                                 const preValue = getProperty(originals, key);
                                 applyOverride(key, v, preValue);
-                            };
-                        }
-                        else
+                            }
+                        } else {
                             applyOverride(updateKey, result, preValue);
+                        }
                     }
                 }
             }
 
             overrides["flags.enhanced.originals"] = originalDelta;
             overrides = flattenObject(overrides);
+            
             const removeDelta = (key) => {
                 const head = key.split(".");
                 const tail = `-=${head.pop()}`;
-                key = ["flags", "enhanced", "originals", ...head, tail].join(".");
-                overrides[key] = null;
+                const deltaKey = ["flags", "enhanced", "originals", ...head, tail].join(".");
+                overrides[deltaKey] = null;
             };
+
             for (const [key, value] of Object.entries(flattenObject(originalDelta))) {
                 if (!(key in overrides)) {
                     overrides[key] = value;
@@ -204,83 +175,70 @@ class enhanced {
                     removeDelta(key);
                 }
             }
+            
             console.log("enhanced | Going to update token", token.document.id, overrides);
-            await token.document.update(overrides);
-        }
-    }
+            return token.document.update(overrides);
+        });
 
+        await Promise.all(tokenUpdatePromises);
+    }
 
     static apply(token, change, originals, preValue) {
         const modes = CONST.ACTIVE_EFFECT_MODES;
         switch (change.mode) {
-            case modes.ADD:
-                return enhanced.applyAdd(token, change, originals, preValue);
-            case modes.MULTIPLY:
-                return enhanced.applyMultiply(token, change, originals, preValue);
+            case modes.ADD: return enhanced.applyAdd(token, change, originals, preValue);
+            case modes.MULTIPLY: return enhanced.applyMultiply(token, change, originals, preValue);
             case modes.OVERRIDE:
             case modes.CUSTOM:
             case modes.UPGRADE:
-            case modes.DOWNGRADE:
-                return enhanced.applyOverride(token, change, originals, preValue);
+            case modes.DOWNGRADE: return enhanced.applyOverride(token, change, originals, preValue);
+            default: return null;
         }
     }
 
     static switchType(key, value) {
-        let numeric = ["light.dim", "light.bright", "dim", "bright", "scale", "height", "width", "light.angle", "light.alpha", "rotation", "speed", "intensity"]
-        let Boolean = ["mirrorX", "mirrorY", "light.gradual", "vision"]
-        if (numeric.includes(key)) return parseFloat(value)
-        else if (Boolean.includes(key)) {
-            if (value === "true") return true
-            if (value === "false") return false
-        }
-        else return value
+        // 5. FIXED NAMING COLLISION
+        const numericKeys = ["light.dim", "light.bright", "dim", "bright", "scale", "height", "width", "light.angle", "light.alpha", "rotation", "speed", "intensity"];
+        const booleanKeys = ["mirrorX", "mirrorY", "light.gradual", "vision"];
+        
+        if (numericKeys.includes(key)) return parseFloat(value);
+        if (booleanKeys.includes(key)) return value === "true";
+        return value;
     }
 
     static applyAdd(token, change, originals, current) {
         let { key, value } = change;
-        key = key.slice(9)
-        value = enhanced.switchType(key, value)
+        key = key.slice(9);
+        value = enhanced.switchType(key, value);
         const ct = getType(current);
-        let update = null;
-
+        
         switch (ct) {
-            case "null":
-                update = parseInt(value);
-                break;
-            case "string":
-                update = current + String(value);
-                break;
-            case "number":
-                if (Number.isNumeric(value)) update = current + Number(value);
-                break;
-            case "Array":
-                if (!current.length || (getType(value) === getType(current[0]))) update = current.concat([value]);
+            case "null": return parseInt(value);
+            case "string": return current + String(value);
+            case "number": return Number.isNumeric(value) ? current + Number(value) : null;
+            case "Array": return (!current.length || getType(value) === getType(current[0])) ? current.concat([value]) : null;
+            default: return null;
         }
-        return update;
     }
 
     static applyMultiply(token, change, originals, current) {
         let { key, value } = change;
-        key = key.slice(9)
-        value = enhanced.switchType(key, value)
+        key = key.slice(9);
+        value = enhanced.switchType(key, value);
 
-        if ((typeof(current) !== "number") || (typeof(value) !== "number")) return null;
-        const update = current * value;
-        return update;
+        if (typeof current !== "number" || typeof value !== "number") return null;
+        return current * value;
     }
 
     static applyOverride(token, change, originals, current) {
         let { key, value, mode } = change;
-        key = key.slice(9)
-        value = enhanced.switchType(key, value)
-        if (mode === CONST.ACTIVE_EFFECT_MODES.UPGRADE) {
-            if ((typeof(current) === "number") && (current >= Number(value))) return null;
-        }
-        if (mode === CONST.ACTIVE_EFFECT_MODES.DOWNGRADE) {
-            if ((typeof(current) === "number") && (current < Number(value))) return null;
-        }
-        if (typeof current === "number") return Number(value);
-        return value;
+        key = key.slice(9);
+        value = enhanced.switchType(key, value);
+        
+        if (mode === CONST.ACTIVE_EFFECT_MODES.UPGRADE && typeof current === "number" && current >= Number(value)) return null;
+        if (mode === CONST.ACTIVE_EFFECT_MODES.DOWNGRADE && typeof current === "number" && current < Number(value)) return null;
+        
+        return typeof current === "number" ? Number(value) : value;
     }
 }
 
